@@ -33,10 +33,12 @@ https://dbdiagram.io/d/6276fa987f945876b6d4ea3b
 2) copy .env.example to .env
 3) run:
 
-    
+
+    ```
     echo > ./database/referendum.sqlite
     php artisan key:generate
     composer install
     php artisan migrate
     php artisan db:seed
     php artisan serve
+    ```
