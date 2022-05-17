@@ -18,3 +18,4 @@ use Illuminate\Support\Facades\Route;
 Route::post('/referendum/create', [\App\Http\Controllers\Referendum::class, 'create']);
 Route::get('/referendum/results/{id}', [\App\Http\Controllers\Referendum::class, 'results']);
 Route::get('/referendum/results', [\App\Http\Controllers\Referendum::class, 'allResults']);
+Route::post('/referendum/vote', [\App\Http\Controllers\Referendum::class, 'vote']);
