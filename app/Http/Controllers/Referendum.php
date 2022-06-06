@@ -58,7 +58,7 @@ class Referendum extends Controller
      * curl --location \
      * --request POST 'http://localhost:8000/api/referendum/vote' \
      * --header 'Content-Type: application/json' \
-     * --data-raw '{"referendum_id": 1, "username": "user1"}'
+     * --data-raw '{"referendum_id": 1, "username": "user1", "votes": [{"question_id": "1", "vote": true},...]}'
      */
     public function vote(Request $request): JsonResponse
     {
