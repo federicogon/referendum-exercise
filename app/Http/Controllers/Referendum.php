@@ -4,10 +4,13 @@ namespace App\Http\Controllers;
 
 use App\Models\Question as QuestionModel;
 use App\Models\QuestionVoters as QVModel;
+use App\Models\QuestionVoters;
+use App\Models\QuestionVotes;
 use App\Models\Referendum as ReferendumModel;
 use App\Models\Voter as VoterModel;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Validator;
 
 class Referendum extends Controller
 {
@@ -27,7 +30,7 @@ class Referendum extends Controller
             'questions'   => 'required|array'
         ]);
 
-        $voters = VoterModel::all();
+        // $voters = VoterModel::all();
 
         $referendum = new ReferendumModel();
         $referendum->title = $validated['title'];
@@ -41,12 +44,14 @@ class Referendum extends Controller
                 $question->title = $questionTitle;
                 $question->referendum_id = $referendum->id;
                 $question->save();
-                foreach ($voters as $voter) {
-                    $qv = new QVModel();
-                    $qv->voter_id = $voter->id;
-                    $qv->question_id = $question->id;
-                    $qv->save();
-                }
+                // foreach ($voters as $voter) {
+
+                //     $qv = new QVModel();
+
+                //     $qv->voter_id = $voter->id;
+                //     $qv->question_id = $question->id;
+                //     $qv->save();
+                // }
             }
         }
 
@@ -62,7 +67,39 @@ class Referendum extends Controller
      */
     public function vote(Request $request): JsonResponse
     {
-        // TODO
+        
+        $validated = Validator::make($request->all(),
+        [
+            'username' => 'required',
+            'votes.*' => 'required|array',
+            'referendum_id' => 'required|exists:referendums,id'
+        ]
+        );
+        $validated->validated();
+
+        $voter = VoterModel::where('username', $request->username)->first();
+        if(!$voter){
+        $voter->username = $request->username;
+        $voter->save();
+        }
+        foreach($request->votes as $vote){
+            $qvs = new QuestionVotes();
+            $qvs->question_id = $vote['question_id'];
+            $qvs->in_support =  $vote['vote'] == true ? true : false;
+            $qvs->save();
+
+            $qv = new QuestionVoters();
+            if($qv->where('voter_id', $voter->id)->first()){
+
+                $qv->voter_id = $voter->id;
+                $qv->question_id = $vote['question_id'];
+                $qv->save();
+
+            }
+
+
+        }
+        
         return response()->json(['success' => true]);
     }
 
@@ -103,6 +140,7 @@ class Referendum extends Controller
     public function allResults(): JsonResponse
     {
         $referendums = ReferendumModel::orderByDesc('order')->get();
+ 
         $response = [];
         foreach ($referendums as $referendum) {
             $response[$referendum->order] = $referendum->only(['id', 'title', 'order']);
