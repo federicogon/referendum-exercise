@@ -16,3 +16,8 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', function () {
     return view('welcome');
 });
+
+Route::get('/voter', [App\Http\Controllers\HomeController::class, 'voter']);
+Route::post('/vote', [App\Http\Controllers\HomeController::class, 'vote']);
+Route::get('/results', [App\Http\Controllers\HomeController::class, 'results']);
+

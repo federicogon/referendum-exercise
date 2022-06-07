@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Helpers\Helper;
 use App\Models\Question as QuestionModel;
 use App\Models\QuestionVoters as QVModel;
 use App\Models\QuestionVoters;
@@ -79,22 +80,33 @@ class Referendum extends Controller
 
         $voter = VoterModel::where('username', $request->username)->first();
         if(!$voter){
+        $voter = new VoterModel();
         $voter->username = $request->username;
         $voter->save();
         }
         foreach($request->votes as $vote){
-            $qvs = new QuestionVotes();
-            $qvs->question_id = $vote['question_id'];
-            $qvs->in_support =  $vote['vote'] == true ? true : false;
-            $qvs->save();
+            
+            $question = QuestionModel::whereId($vote['question_id'])->whereReferendumId($request->referendum_id)->first();
 
-            $qv = new QuestionVoters();
-            if($qv->where('voter_id', $voter->id)->first()){
+            if($question){
+               
+                $qv = new QuestionVoters();
+    
+    
+                $check = $qv->where('voter_id',$voter->id)
+                ->where('question_id', $vote['question_id'])->first();
 
-                $qv->voter_id = $voter->id;
-                $qv->question_id = $vote['question_id'];
-                $qv->save();
-
+                if(!$check && !is_null($vote['vote']))
+                {
+                    $qv->voter_id = $voter->id;
+                    $qv->question_id = $vote['question_id'];
+                    $qv->save();
+    
+                    $qvs = new QuestionVotes();
+                    $qvs->question_id = $vote['question_id'];
+                    $qvs->in_support =  $vote['vote'] == 'true' ? true : false;
+                    $qvs->save();
+                }
             }
 
 
@@ -110,23 +122,8 @@ class Referendum extends Controller
     {
         $referendum = ReferendumModel::findOrFail($id);
 
-        $results = [];
-        foreach ($referendum->questions as $question) {
-            $totalVotes = 0;
-            $yesVotes = 0;
-            foreach ($question->votes as $vote) {
-                $totalVotes++;
-                if ($vote->in_support == 1) {
-                    $yesVotes++;
-                }
-            }
-            $results[] = [
-                'question_id' => $question->id,
-                'question'    => $question->title,
-                'votes'       => $totalVotes,
-                'yesVotes'    => $yesVotes
-            ];
-        }
+        $results = Helper::formatResult($referendum);
+        
         return response()->json([
             'success'    => true,
             'referendum' => $referendum->only(['id', 'title', 'description']),
@@ -139,8 +136,8 @@ class Referendum extends Controller
      */
     public function allResults(): JsonResponse
     {
-        $referendums = ReferendumModel::orderByDesc('order')->get();
- 
+        $referendums = ReferendumModel::orderBy('order')->get();
+
         $response = [];
         foreach ($referendums as $referendum) {
             $response[$referendum->order] = $referendum->only(['id', 'title', 'order']);
