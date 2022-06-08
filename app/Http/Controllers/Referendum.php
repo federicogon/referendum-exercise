@@ -31,8 +31,7 @@ class Referendum extends Controller
             'questions'   => 'required|array'
         ]);
 
-        // $voters = VoterModel::all();
-
+    
         $referendum = new ReferendumModel();
         $referendum->title = $validated['title'];
         $referendum->description = $validated['description'];
@@ -45,14 +44,7 @@ class Referendum extends Controller
                 $question->title = $questionTitle;
                 $question->referendum_id = $referendum->id;
                 $question->save();
-                // foreach ($voters as $voter) {
-
-                //     $qv = new QVModel();
-
-                //     $qv->voter_id = $voter->id;
-                //     $qv->question_id = $question->id;
-                //     $qv->save();
-                // }
+               
             }
         }
 
@@ -68,7 +60,7 @@ class Referendum extends Controller
      */
     public function vote(Request $request): JsonResponse
     {
-        
+
         $validated = Validator::make($request->all(),
         [
             'username' => 'required',
@@ -84,7 +76,8 @@ class Referendum extends Controller
         $voter->username = $request->username;
         $voter->save();
         }
-        foreach($request->votes as $vote){
+
+        foreach($request->votes ?? [] as $vote){
             
             $question = QuestionModel::whereId($vote['question_id'])->whereReferendumId($request->referendum_id)->first();
 
@@ -96,7 +89,7 @@ class Referendum extends Controller
                 $check = $qv->where('voter_id',$voter->id)
                 ->where('question_id', $vote['question_id'])->first();
 
-                if(!$check && !is_null($vote['vote']))
+                if(!$check)
                 {
                     $qv->voter_id = $voter->id;
                     $qv->question_id = $vote['question_id'];
@@ -134,14 +127,29 @@ class Referendum extends Controller
     /**
      * /api/referendum/results/
      */
-    public function allResults(): JsonResponse
+    public function allResults(Request $request): JsonResponse
     {
-        $referendums = ReferendumModel::orderBy('order')->get();
+        $default_sort = 'desc';
+        $referendums = ReferendumModel::orderBy('order', $request->sort ?? $default_sort )->get();
 
         $response = [];
         foreach ($referendums as $referendum) {
             $response[$referendum->order] = $referendum->only(['id', 'title', 'order']);
+            $response[$referendum->order]['results'] = Helper::formatResult($referendum);
         }
         return response()->json(['success' => true, 'list' => array_values($response)]);
+    }
+
+    public function questions(): JsonResponse
+    {
+        $referendums = ReferendumModel::all();
+        $response = [];
+        foreach ($referendums as $referendum) {
+            $response[] = [
+                'id' => $referendum->id,
+                'questions' => $referendum->questions->toArray()
+            ];
+        }
+        return response()->json(['success' => true, 'referendums' => $response]);
     }
 }

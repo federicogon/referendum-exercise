@@ -12,27 +12,27 @@ class Helper
 
         if(!isset($data->questions)){
             foreach ($data as $referendum) {
- 
-                foreach ($referendum->questions as $question) {
-                    $totalVotes = 0;
-                    $yesVotes = 0;
-                    foreach ($question->votes as $vote) {
-                        $totalVotes++;
-                        if ($vote->in_support == 1) {
-                            $yesVotes++;
-                        }
-                    }
-                    $results[] = [
-                        'question_id' => $question->id,
-                        'question'    => $question->title,
-                        'votes'       => $totalVotes,
-                        'yesVotes'    => $yesVotes
-                    ];
+
+                foreach (static::handle($referendum) as $value) {
+                    $results[] = $value;
                 }
+                
             }
+            
             return $results;
         }
         $referendum = $data;
+        
+        foreach (static::handle($referendum) as $value) {
+            $results[] = $value;
+        }
+
+        return $results;
+    }
+
+    private static function handle($referendum) : array
+    {
+        $results = [];
         foreach ($referendum->questions as $question) {
             $totalVotes = 0;
             $yesVotes = 0;
@@ -42,14 +42,16 @@ class Helper
                     $yesVotes++;
                 }
             }
-            $results[] = [
-                'question_id' => $question->id,
-                'question'    => $question->title,
-                'votes'       => $totalVotes,
-                'yesVotes'    => $yesVotes
-            ];
+
+                $results[] = [
+                    'question_id' => $question->id,
+                    'question'    => $question->title,
+                    'votes'       => $totalVotes,
+                    'yesVotes'    => $yesVotes
+                ];
+            
         }
-        return $results;
+        return  $results;
     }
 }
 
